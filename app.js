@@ -1,13 +1,16 @@
-import express from 'express';
-import { getHello } from './src/my-legacy-service.js';
+import * as express from 'express';
+import { getHello } from './src-legacy/my-legacy-service.js';
+import { bootstrap } from './src/app.bootstraper';
 
 const app = express();
-const port = 3000;
+const PORT = 3000;
 
-app.get('/', (req, res) => {
+app.get('/v1', (req, res) => {
   res.send(getHello());
 });
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+bootstrap(app).then((nestApp) => {
+  nestApp.listen(PORT, () => {
+    console.log(`app running on port ${PORT}`);
+  });
 });
