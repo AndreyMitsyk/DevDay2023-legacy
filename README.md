@@ -1,73 +1,96 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
-
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
 ## Description
+This is a small example about how to add NestJS to existing legacy app running on Express.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### How to integrate Nest.JS to Express app:
+- Install @nestjs/cli:
+```bash
+$ npm i -g @nestjs/cli
+```
+- Rename your original `package.json`, e.g. `package-old.json`
+- [Optional] Rename your old `src` folder if exist, e.g. `src-legacy`
+- Create new NestJS project using this command inside your root folder using command:
+```bash
+$ nest new . -g -s -p npm -l TS
+```
+- Copy required dependencies from your legacy app (`package-old.json`) into the new `package.json`
+- Install node modules
+```bash
+$ npm i
+```
+- Modify start commands in `package.json` file to run your file with an old express entrypoint, e.g. `app.js`:
+```
+"start": "npx ts-node app.js",
+"start:prod": "node dist/app.js",
+```
+- [Optional] If your legacy project contains js code, allow it inside the `compilerOptions` in `tsconfig.json`:
+```
+"allowJs": true,
+```
+- Modify `src/main.ts`:
+```ts
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { ExpressAdapter } from '@nestjs/platform-express';
 
-## Installation
+export async function bootstrap(express) {
+  const adapter = new ExpressAdapter(express);
+  const app = await NestFactory.create(AppModule, adapter);
+
+  await app.init();
+
+  return app;
+}
+```
+- Modify `src/app.controller.ts` to test NestJS endpoints later, e.g.:
+```ts
+@Controller('v2')
+```
+- Pass your existing express into newly created Nest bootstrap function. In this example it's inside `app.js` file:
+```js
+import * as express from 'express';
+import { getHello } from './src-legacy/my-legacy-service.js';
+import { bootstrap } from './src/main';
+
+const app = express();
+const port = 3000;
+
+app.get('/v1', (req, res) => {
+  res.send(getHello());
+});
+
+bootstrap(app).then((nestApp) => {
+  nestApp.listen(port, () => {
+    console.log(`app running on port ${port}`);
+  });
+});
+```
+- Build and run app:
+```bash
+# development
+$ npm run start
+
+# production mode
+$ npm run build
+$ npm run start:prod
+```
+- Verify your old and new NestJS endpoints
+
+## How to run this example
+### Installation
 
 ```bash
-$ npm install
+$ npm i
 ```
 
-## Running the app
+### Running the app
 
 ```bash
 # development
 $ npm run start
 
-# watch mode
-$ npm run start:dev
-
 # production mode
+$ npm run build
 $ npm run start:prod
 ```
 
-## Test
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
+Nest JS Docs: https://docs.nestjs.com/
